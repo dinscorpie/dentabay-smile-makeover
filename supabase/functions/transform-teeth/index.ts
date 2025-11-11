@@ -23,7 +23,7 @@ serve(async (req) => {
 
     console.log('Starting teeth transformation with Gemini...');
 
-    const prompt = "Transform this person's teeth to be perfectly beautiful, naturally white, and symmetrical. Make the teeth look healthy and professionally whitened while keeping the smile natural and the rest of the face unchanged.";
+    const prompt = "Transform this person's teeth to be perfectly beautiful, naturally white, symmetrical, and perfectly aligned. If the person is wearing braces, retainers, or any dental appliances, remove them completely and show natural, healthy, straight teeth instead. Keep everything else in the image unchanged, including facial features, skin, hair, background, and expression.";
 
     // Extract MIME type and base64 data
     const mimeMatch = imageData.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);

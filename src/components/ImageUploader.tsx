@@ -37,17 +37,30 @@ const ImageUploader = () => {
         body: { imageData: originalImage }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle rate limiting specially
+        if (error.message?.includes('FunctionsHttpError: 429')) {
+          const retryDelay = data?.retryDelay || '60s';
+          toast.error(`Rate limited by AI service. Please retry in about ${retryDelay}.`);
+          throw error;
+        }
+        throw error;
+      }
 
       if (data?.success && data?.imageData) {
         setTransformedImage(data.imageData);
         toast.success('Teeth transformed successfully!');
       } else {
-        throw new Error(data?.error || 'Transformation failed');
+        const errorMsg = data?.error || 'Transformation failed';
+        toast.error(errorMsg);
+        throw new Error(errorMsg);
       }
     } catch (error) {
       console.error('Transform error:', error);
-      toast.error('Failed to transform image. Please try again.');
+      // Only show generic error if we haven't already shown a specific one
+      if (!error?.message?.includes('FunctionsHttpError: 429') && !error?.message?.includes('Rate limited')) {
+        toast.error(error?.message || 'Failed to transform image. Please try again.');
+      }
     } finally {
       setIsTransforming(false);
     }

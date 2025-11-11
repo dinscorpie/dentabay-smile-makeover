@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Upload, Sparkles, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const ImageUploader = () => {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -32,25 +33,17 @@ const ImageUploader = () => {
 
     setIsTransforming(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transform-teeth`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ imageData: originalImage }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('transform-teeth', {
+        body: { imageData: originalImage }
+      });
 
-      const data = await response.json();
+      if (error) throw error;
 
-      if (data.success && data.imageData) {
+      if (data?.success && data?.imageData) {
         setTransformedImage(data.imageData);
         toast.success('Teeth transformed successfully!');
       } else {
-        throw new Error(data.error || 'Transformation failed');
+        throw new Error(data?.error || 'Transformation failed');
       }
     } catch (error) {
       console.error('Transform error:', error);

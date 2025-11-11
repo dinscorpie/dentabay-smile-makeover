@@ -15,86 +15,62 @@ serve(async (req) => {
 
   try {
     const { imageData } = await req.json();
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
 
-    if (!geminiApiKey) {
-      throw new Error('GEMINI_API_KEY not configured');
+    if (!openaiApiKey) {
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
-    console.log('Starting teeth transformation with Gemini...');
+    console.log('Starting teeth transformation with OpenAI...');
 
-    // Prepare the request to Gemini
-    const prompt = "Transform this person's teeth to be perfectly beautiful, naturally white, and symmetrical. Make the teeth look healthy and professionally whitened while keeping the smile natural and the rest of the face unchanged.";
+    // Convert base64 to blob
+    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+    const imageBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+    const imageBlob = new Blob([imageBytes], { type: 'image/png' });
 
-    // Convert base64 to proper format for Gemini
-    const imageBase64 = imageData.replace(/^data:image\/\w+;base64,/, '');
+    // Create form data for OpenAI
+    const formData = new FormData();
+    formData.append('image', imageBlob, 'image.png');
+    formData.append('prompt', 'Transform this person\'s teeth to be perfectly white, symmetrical, and naturally beautiful. Keep everything else exactly the same.');
+    formData.append('model', 'dall-e-2');
+    formData.append('n', '1');
+    formData.append('size', '1024x1024');
+    formData.append('response_format', 'b64_json');
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${geminiApiKey}`,
+      'https://api.openai.com/v1/images/edits',
       {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiApiKey}`,
         },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                },
-                {
-                  inline_data: {
-                    mime_type: 'image/jpeg',
-                    data: imageBase64
-                  }
-                }
-              ]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.4,
-            topK: 32,
-            topP: 1,
-            maxOutputTokens: 4096,
-          }
-        }),
+        body: formData,
       }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      console.error('OpenAI API error:', errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
-    console.log('Gemini response received');
+    console.log('OpenAI response received');
 
-    // Extract the generated image from the response
-    if (result.candidates && result.candidates[0]?.content?.parts) {
-      const parts = result.candidates[0].content.parts;
-      
-      // Look for inline_data in the response parts
-      for (const part of parts) {
-        if (part.inline_data && part.inline_data.data) {
-          console.log('Generated image found');
-          return new Response(
-            JSON.stringify({
-              success: true,
-              imageData: `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`
-            }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
-          );
+    if (result.data && result.data[0]?.b64_json) {
+      const transformedImage = `data:image/png;base64,${result.data[0].b64_json}`;
+      return new Response(
+        JSON.stringify({
+          success: true,
+          imageData: transformedImage
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
-      }
+      );
     }
 
-    // If no image found in response, return error
-    console.error('No image data in Gemini response:', JSON.stringify(result));
-    throw new Error('No transformed image returned from Gemini');
+    throw new Error('No transformed image returned from OpenAI');
 
   } catch (error) {
     console.error('Error in transform-teeth function:', error);

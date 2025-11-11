@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Upload, Sparkles, Download, Loader2 } from "lucide-react";
+import { Upload, Sparkles, Download, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -185,13 +185,24 @@ const ImageUploader = () => {
           </Button>
 
           {transformedImage && (
-            <Button
-              variant="secondary"
-              onClick={handleDownload}
-            >
-              <Download className="w-5 h-5 mr-2" />
-              Download Result
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={handleTransform}
+                disabled={isTransforming}
+              >
+                <RefreshCw className="w-5 h-5 mr-2" />
+                Regenerate
+              </Button>
+              
+              <Button
+                variant="secondary"
+                onClick={handleDownload}
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Download Result
+              </Button>
+            </>
           )}
         </div>
       )}

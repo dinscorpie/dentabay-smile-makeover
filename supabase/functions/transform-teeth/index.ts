@@ -103,12 +103,12 @@ serve(async (req) => {
       const parts = result.candidates[0].content.parts;
       
       for (const part of parts) {
-        if (part.inline_data && part.inline_data.data) {
-          console.log('Generated image found with MIME type:', part.inline_data.mime_type);
+        if (part.inlineData && part.inlineData.data) {
+          console.log('Generated image found with MIME type:', part.inlineData.mimeType);
           return new Response(
             JSON.stringify({
               success: true,
-              imageData: `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`
+              imageData: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
             }),
             {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
